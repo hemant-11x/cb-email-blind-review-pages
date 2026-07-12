@@ -157,7 +157,7 @@
       <input class="reviewer-input" id="reviewerEmail" type="email" autocomplete="email" placeholder="you@company.com" required>
       <h2 class="jump-title">Review cases</h2>
       <div class="jump-grid" id="jumpGrid"></div>
-      <div class="privacy"><strong>Customer data</strong><br>This file is for internal review only. Do not upload, forward, or attach it to tickets or PRs.</div>
+      <div class="privacy"><strong>Public-source lead research</strong><br>Use this context only to evaluate the two email variants.</div>
       <button class="button danger" id="clearAll" style="width:100%;margin-top:14px">Clear saved answers</button>
     </aside>
     <main>
@@ -216,7 +216,7 @@
     let saved;
     try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { saved = {}; }
     const state = {
-      reviewerEmail: saved.reviewerEmail || saved.reviewerName || '',
+      reviewerEmail: saved.reviewerEmail || '',
       responses: saved.responses || {},
       submission: saved.submission || null,
     };
