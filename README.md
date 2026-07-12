@@ -1,9 +1,11 @@
-# Encrypted Campaign Builder review page
+# Campaign Builder CSM email review
 
-This public repository contains only the encrypted browser shell for an
-internal Campaign Builder email review. It does not contain the passphrase,
-plaintext research, email variants, candidate identities, answer key, or
-reviewer submissions.
+Public GitHub Pages site for a 20-case blinded comparison of Campaign Builder
+email sequences.
 
-The payload is encrypted with AES-256-GCM using a PBKDF2-SHA256 derived key.
-Completed reviews are submitted to a separate private repository.
+Reviewers enter their work email, complete every comparison, and select
+**Submit review**. The browser sends the response directly to the evaluation
+owner through FormSubmit; no GitHub account or review password is required.
+
+Answers also autosave in the reviewer's browser and can be exported as JSON or
+CSV as a fallback.
