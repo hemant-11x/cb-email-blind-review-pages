@@ -149,8 +149,8 @@
     </div>
     <div class="top-actions">
       <button class="button ghost" id="submitGithub">Submit review</button>
-      <button class="button primary" id="exportJson">Export JSON</button>
-      <button class="button ghost" id="exportCsv">Export CSV</button>
+      <button class="button primary" id="exportJson">Export full JSON</button>
+      <button class="button ghost" id="exportCsv">Export full CSV</button>
     </div>
   </header>
   <div class="layout">
@@ -319,7 +319,7 @@
       document.body.append(link); link.click(); URL.revokeObjectURL(link.href); link.remove();
     }
 
-    function exportPayload() {
+    function buildPayload(includeMessages) {
       return {
         schemaVersion: 1,
         reviewId: REVIEW_DATA.reviewId,
@@ -327,12 +327,23 @@
         exportedAt: new Date().toISOString(),
         completed: REVIEW_DATA.cases.filter(item => isComplete(responseFor(item.reviewId))).length,
         total: REVIEW_DATA.cases.length,
-        responses: REVIEW_DATA.cases.map(item => ({ reviewId: item.reviewId, ...responseFor(item.reviewId) })),
+        responses: REVIEW_DATA.cases.map(item => ({
+          reviewId: item.reviewId,
+          ...(includeMessages ? {
+            source: item.source,
+            sendDate: item.today,
+            researchContext: item.researchReport,
+            variantA: item.variantA,
+            variantB: item.variantB,
+            ...(item.variantC ? { variantC: item.variantC } : {}),
+          } : {}),
+          ...responseFor(item.reviewId),
+        })),
       };
     }
 
     async function submitReview() {
-      const payload = exportPayload();
+      const payload = buildPayload(false);
       const emailInput = byId('reviewerEmail');
       if (!payload.reviewerEmail || !emailInput.checkValidity()) { showToast('Add a valid reviewer email before submitting.'); emailInput.focus(); return; }
       if (payload.completed !== payload.total) { showToast('Complete all ' + payload.total + ' cases before submitting.'); return; }
@@ -378,6 +389,13 @@
     }
 
     function csvCell(value) { return '"' + String(value ?? '').replaceAll('"', '""') + '"'; }
+    function formatSequence(emails) {
+      return (emails || []).map((email, index) => [
+        'Email ' + (index + 1),
+        email.subject ? 'Subject: ' + email.subject : 'Reply in thread',
+        email.body,
+      ].join('\n')).join('\n\n---\n\n');
+    }
     function showToast(message) { const toast = byId('toast'); toast.textContent = message; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2200); }
 
     byId('reviewerEmail').value = state.reviewerEmail;
@@ -394,12 +412,12 @@
     byId('submitGithub').disabled = Boolean(state.submission);
     byId('submitGithub').textContent = state.submission ? 'Submitted ✓' : 'Submit review';
     byId('submitGithub').addEventListener('click', submitReview);
-    byId('exportJson').addEventListener('click', () => { const payload = exportPayload(); download('cb-email-blind-review-responses.json', JSON.stringify(payload, null, 2), 'application/json'); showToast('JSON responses exported'); });
+    byId('exportJson').addEventListener('click', () => { const payload = buildPayload(true); download('cb-email-blind-review-full.json', JSON.stringify(payload, null, 2), 'application/json'); showToast('Full JSON review exported'); });
     byId('exportCsv').addEventListener('click', () => {
-      const payload = exportPayload();
-      const header = ['review_id','winner','deciding_factors','reasoning','risk_flags','confidence','reviewer_email'];
-      const rows = payload.responses.map(item => [item.reviewId,item.winner,item.factors.join(' | '),item.reasoning,item.risks.join(' | '),item.confidence,payload.reviewerEmail]);
-      download('cb-email-blind-review-responses.csv', [header, ...rows].map(row => row.map(csvCell).join(',')).join('\n'), 'text/csv'); showToast('CSV responses exported');
+      const payload = buildPayload(true);
+      const header = ['review_id','source','send_date','research_context','variant_a_messages','variant_b_messages','variant_c_messages','winner','deciding_factors','reasoning','risk_flags','confidence','reviewer_email'];
+      const rows = payload.responses.map(item => [item.reviewId,item.source,item.sendDate,item.researchContext,formatSequence(item.variantA),formatSequence(item.variantB),formatSequence(item.variantC),item.winner,item.factors.join(' | '),item.reasoning,item.risks.join(' | '),item.confidence,payload.reviewerEmail]);
+      download('cb-email-blind-review-full.csv', [header, ...rows].map(row => row.map(csvCell).join(',')).join('\n'), 'text/csv'); showToast('Full CSV review exported');
     });
     byId('clearAll').addEventListener('click', () => { if (confirm('Clear every saved answer for this review?')) { localStorage.removeItem(STORAGE_KEY); location.reload(); } });
     const instructions = byId('instructions'); REVIEW_DATA.instructions.forEach(text => { const item = document.createElement('li'); item.textContent = text; instructions.append(item); });
